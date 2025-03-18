@@ -1,0 +1,12 @@
+﻿services:
+  usermanagement.api:
+    image: usermanagement.api
+    build:
+      context: .
+      dockerfile: UserManagement.API/Dockerfile
+
+  productmanagement.api:
+    image: productmanagement.api
+    build:
+      context: .
+      dockerfile: ProductManagement.API/Dockerfile
