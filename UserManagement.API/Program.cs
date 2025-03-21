@@ -25,7 +25,7 @@ public class Program
         app.UseHttpsRedirection();
 
         app.UseAuthorization();
-        
+
         app.Run();
     }
 }
