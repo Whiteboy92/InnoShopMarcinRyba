@@ -1,6 +1,15 @@
-﻿namespace UserManagement.Application.Interfaces;
+﻿using UserManagement.Application.DTOs;
+using UserManagement.Application.Features.Users.Commands;
 
-public class IUserService
+namespace UserManagement.Application.Interfaces;
+
+public interface IUserService
 {
-    
+    Task<UserDto> GetUserByIdAsync(Guid userId);
+    Task<List<UserDto>> GetAllUsersAsync();
+    Task<bool> CreateUserAsync(CreateUserCommand command);
+    Task<bool> UpdateUserAsync(UpdateUserCommand command);
+    Task<bool> DeleteUserAsync(Guid userId);
+    Task<bool> AssignRoleToUserAsync(Guid userId, string role);
+    Task<bool> ChangeUserPasswordAsync(Guid userId, string newPassword);
 }

@@ -29,4 +29,11 @@
       </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Shared.Exceptions\Shared.Exceptions.csproj" />
+      <ProjectReference Include="..\Shared.Logging\Shared.Logging.csproj" />
+      <ProjectReference Include="..\UserManagement.Domain\UserManagement.Domain.csproj" />
+      <ProjectReference Include="..\UserManagement.Infrastructure\UserManagement.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>

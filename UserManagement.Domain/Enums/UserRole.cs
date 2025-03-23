@@ -1,6 +1,7 @@
 ﻿namespace UserManagement.Domain.Enums;
 
-public class UserRole
+public enum UserRole
 {
-    
+    Admin,
+    User,
 }

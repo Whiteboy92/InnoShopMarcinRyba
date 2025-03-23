@@ -1,3 +1,8 @@
+using Shared.Exceptions;
+using UserManagement.API.Extensions;
+using UserManagement.API.Middleware;
+using UserManagement.Infrastructure.Auth;
+
 namespace UserManagement.API;
 
 public class Program
@@ -6,26 +11,47 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-        builder.Services.AddAuthorization();
-
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        // Register services in the container
+        ConfigureServices(builder.Services);
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
+        // Configure middleware pipeline
+        ConfigureMiddleware(app);
+
+        app.Run();
+    }
+
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        // Add Authorization, Swagger, and Controller services
+        services.AddAuthorization();
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
+        services.AddControllers();
+
+        // Register application-specific services
+        services.AddApplicationServices();
+        services.AddLoggingServices();
+
+        // Register third-party services
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddSingleton<GlobalExceptionHandler>();
+    }
+
+    private static void ConfigureMiddleware(WebApplication app)
+    {
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+        
+        app.UseMiddleware<GlobalExceptionHandler>();
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseHttpsRedirection();
 
         app.UseAuthorization();
-
-        app.Run();
     }
 }

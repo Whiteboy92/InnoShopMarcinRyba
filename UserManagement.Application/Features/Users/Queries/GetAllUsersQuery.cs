@@ -1,6 +1,8 @@
-﻿namespace UserManagement.Application.Features.Users.Queries;
+﻿using MediatR;
+using UserManagement.Application.DTOs;
 
-public class GetAllUsersQuery
+namespace UserManagement.Application.Features.Users.Queries;
+
+public class GetAllUsersQuery : IRequest<List<UserDto>>
 {
-    
 }

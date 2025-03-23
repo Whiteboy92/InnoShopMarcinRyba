@@ -1,6 +1,14 @@
-﻿namespace UserManagement.Application.Features.Users.Queries;
+﻿using MediatR;
+using UserManagement.Application.DTOs;
 
-public class GetUserByIdQuery
+namespace UserManagement.Application.Features.Users.Queries;
+
+public class GetUserByIdQuery : IRequest<UserDto>
 {
-    
+    public Guid UserId { get; }
+
+    public GetUserByIdQuery(Guid userId)
+    {
+        UserId = userId;
+    }
 }
