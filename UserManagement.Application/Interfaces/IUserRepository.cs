@@ -1,4 +1,5 @@
-﻿using UserManagement.Domain.Entities;
+﻿using UserManagement.Application.DTOs;
+using UserManagement.Domain.Entities;
 
 namespace UserManagement.Application.Interfaces;
 
@@ -9,5 +10,5 @@ public interface IUserRepository
     Task<bool> CreateAsync(User user);
     Task<bool> UpdateAsync(User user);
     Task<bool> DeleteAsync(Guid userId);
-    Task<User> GetUserByEmailAsync(string email);
+    Task<User> GetByEmailAsync(string userEmail);
 }

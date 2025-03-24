@@ -13,4 +13,5 @@ public interface IUserService
     Task<bool> ReactivateUserAsync(Guid userId);
     Task<bool> AssignRoleToUserAsync(Guid userId, string role);
     Task<bool> ChangeUserPasswordAsync(Guid userId, string newPassword);
+    Task<UserDto> GetUserByEmailAsync(string userEmail);
 }

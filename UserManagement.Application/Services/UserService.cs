@@ -190,4 +190,30 @@ public class UserService : IUserService
         logger.LogInformation($"Password changed successfully for user {userId}");
         return true;
     }
+
+    public async Task<UserDto> GetUserByEmailAsync(string userEmail)
+    {
+        logger.LogInformation($"Fetching user by email: {userEmail}");
+
+        try
+        {
+            var user = await userRepository.GetByEmailAsync(userEmail) 
+                       ?? throw new KeyNotFoundException($"User with email {userEmail} not found.");
+
+            var userDto = await user.ToDto(userManager);
+            logger.LogInformation($"User found: {userEmail}");
+        
+            return userDto;
+        }
+        catch (KeyNotFoundException ex)
+        {
+            logger.LogError($"User with email {userEmail} not found.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"An error occurred while fetching the user with email {userEmail}");
+            throw new ApplicationException("An error occurred while retrieving the user information.", ex);
+        }
+    }
 }

@@ -2,6 +2,7 @@
 using UserManagement.Application.Interfaces;
 using UserManagement.Domain.Entities;
 using Shared.Logging;
+using UserManagement.Application.DTOs;
 
 namespace UserManagement.Persistence.Repositories;
 
@@ -129,16 +130,16 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User> GetUserByEmailAsync(string email)
+    public async Task<User> GetByEmailAsync(string userEmail)
     {
         try
         {
-            logger.LogInformation($"Fetching user by email: {email}");
+            logger.LogInformation($"Fetching user by email: {userEmail}");
 
-            var user = await userManager.FindByEmailAsync(email);
+            var user = await userManager.FindByEmailAsync(userEmail);
             if (user == null)
             {
-                logger.LogWarning($"User with email {email} not found.");
+                logger.LogWarning($"User with email {userEmail} not found.");
                 throw new InvalidOperationException("User not found by email.");
             }
 
@@ -146,7 +147,7 @@ public class UserRepository : IUserRepository
         }
         catch (Exception ex)
         {
-            logger.LogError($"Error fetching user by email: {email}. Exception: {ex.Message}");
+            logger.LogError($"Error fetching user by email: {userEmail}. Exception: {ex.Message}");
             throw new ApplicationException("An error occurred while fetching the user by email.", ex);
         }
     }

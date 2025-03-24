@@ -69,4 +69,25 @@ public class EmailService : IEmailService
             throw new EmailSendException("An error occurred while sending the account verification email.", ex);
         }
     }
+    
+    public async Task SendPasswordRecoveryEmailAsync(string userEmail, string token)
+    {
+        try
+        {
+            var recoveryUrl = $"https://your-app.com/reset-password?token={token}";  // URL to reset password
+            var subject = "Password Recovery Request";
+            var body = $"Click the following link to reset your password: <a href=\"{recoveryUrl}\">Reset Password</a>";
+
+            logger.LogInformation("Sending password recovery email to {Email}", userEmail);
+
+            await SendEmailAsync(userEmail, subject, body);
+
+            logger.LogInformation("Password recovery email sent to {Email}", userEmail);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while sending password recovery email to {Email}", userEmail);
+            throw new EmailSendException("An error occurred while sending the password recovery email.", ex);
+        }
+    }
 }
