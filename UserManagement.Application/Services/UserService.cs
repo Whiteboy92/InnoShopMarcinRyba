@@ -205,7 +205,7 @@ public class UserService : IUserService
         
             return userDto;
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
             logger.LogError($"User with email {userEmail} not found.");
             throw;
