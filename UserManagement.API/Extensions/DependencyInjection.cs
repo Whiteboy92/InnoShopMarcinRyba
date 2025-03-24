@@ -4,6 +4,7 @@ using UserManagement.Application.Features.Users.Commands;
 using UserManagement.Application.Interfaces;
 using UserManagement.Domain.Entities;
 using Shared.Exceptions;
+using UserManagement.Application.Features.Users.Handlers;
 using UserManagement.Application.Validators;
 using UserManagement.Infrastructure.EmailService;
 using UserManagement.Persistence.Repositories;

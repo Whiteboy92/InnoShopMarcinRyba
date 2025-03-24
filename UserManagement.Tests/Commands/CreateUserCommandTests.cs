@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Shared.Exceptions;
 using UserManagement.Application.Features.Users.Commands;
+using UserManagement.Application.Features.Users.Handlers;
 using UserManagement.Domain.Entities;
 using UserManagement.Domain.Enums;
 using UserManagement.Infrastructure.EmailService;

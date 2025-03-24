@@ -39,10 +39,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Models\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\UserManagement.Application\UserManagement.Application.csproj" />
       <ProjectReference Include="..\UserManagement.Persistence\UserManagement.Persistence.csproj" />
     </ItemGroup>

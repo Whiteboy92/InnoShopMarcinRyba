@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Shared.Exceptions;
 using UserManagement.Application.Features.Users.Commands;
 using UserManagement.Application.Features.Users.Handlers;
 using UserManagement.Domain.Entities;
@@ -33,8 +32,7 @@ public class RegisterCommandHandlerTests
             Mock.Of<IServiceProvider>(),
             Mock.Of<ILogger<UserManager<User>>>()
         );
-
-        // Other mocks initialization
+        
         emailServiceMock = new Mock<IEmailService>();
         validatorMock = new Mock<IValidator<RegisterCommand>>();
         loggerMock = new Mock<ILogger<RegisterCommandHandler>>();
@@ -83,7 +81,7 @@ public class RegisterCommandHandlerTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("User registered successfully with Email")),
+                It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("User registered successfully with Email")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()
             ),

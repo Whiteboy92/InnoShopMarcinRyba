@@ -55,7 +55,24 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
-        var result = await mediator.Send(new DeleteUserCommand(id));
+        // Deactivation logic instead of full delete
+        var result = await mediator.Send(new DeactivateUserCommand(id));
+        return result ? NoContent() : NotFound();
+    }
+
+    // New endpoint for deactivating a user (instead of deleting)
+    [HttpPatch("{id:guid}/deactivate")]
+    public async Task<IActionResult> DeactivateUser(Guid id)
+    {
+        var result = await mediator.Send(new DeactivateUserCommand(id));
+        return result ? NoContent() : NotFound();
+    }
+
+    // New endpoint for reactivating a user
+    [HttpPatch("{id:guid}/reactivate")]
+    public async Task<IActionResult> ReactivateUser(Guid id)
+    {
+        var result = await mediator.Send(new ReactivateUserCommand(id));
         return result ? NoContent() : NotFound();
     }
 }

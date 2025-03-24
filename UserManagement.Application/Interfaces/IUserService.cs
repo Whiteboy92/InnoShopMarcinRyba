@@ -6,10 +6,11 @@ namespace UserManagement.Application.Interfaces;
 public interface IUserService
 {
     Task<UserDto> GetUserByIdAsync(Guid userId);
-    Task<List<UserDto>> GetAllUsersAsync();
+    Task<UserDto[]> GetAllUsersAsync();
     Task<bool> CreateUserAsync(CreateUserCommand command);
     Task<bool> UpdateUserAsync(UpdateUserCommand command);
-    Task<bool> DeleteUserAsync(Guid userId);
+    Task<bool> DeactivateUserAsync(Guid userId);
+    Task<bool> ReactivateUserAsync(Guid userId);
     Task<bool> AssignRoleToUserAsync(Guid userId, string role);
     Task<bool> ChangeUserPasswordAsync(Guid userId, string newPassword);
 }

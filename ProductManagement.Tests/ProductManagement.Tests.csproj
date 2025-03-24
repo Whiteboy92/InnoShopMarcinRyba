@@ -41,4 +41,8 @@
         <Using Include="Xunit"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\ProductManagement.Application\ProductManagement.Application.csproj" />
+    </ItemGroup>
+
 </Project>

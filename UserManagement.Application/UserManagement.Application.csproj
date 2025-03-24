@@ -30,6 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\ProductManagement.Persistence\ProductManagement.Persistence.csproj" />
       <ProjectReference Include="..\Shared.Exceptions\Shared.Exceptions.csproj" />
       <ProjectReference Include="..\Shared.Logging\Shared.Logging.csproj" />
       <ProjectReference Include="..\UserManagement.Domain\UserManagement.Domain.csproj" />

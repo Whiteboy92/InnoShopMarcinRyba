@@ -1,6 +1,5 @@
-﻿namespace UserManagement.Domain.Events;
+﻿using MediatR;
 
-public class UserCreatedEvent
-{
-    
-}
+namespace UserManagement.Domain.Events;
+
+public record UserCreatedEvent(Guid UserId, string Email, DateTime CreatedAt) : INotification;

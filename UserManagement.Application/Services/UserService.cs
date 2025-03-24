@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using ProductManagement.Persistence.Repositories;
 using UserManagement.Application.Interfaces;
 using UserManagement.Application.DTOs;
 using UserManagement.Application.Features.Users.Commands;
@@ -11,250 +12,182 @@ namespace UserManagement.Application.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository userRepository;
+    private readonly IProductRepository productRepository;
     private readonly UserManager<User> userManager;
     private readonly ILoggerService<UserService> logger;
 
-    public UserService(IUserRepository userRepository, UserManager<User> userManager, ILoggerService<UserService> logger)
+    public UserService(
+        IUserRepository userRepository,
+        IProductRepository productRepository,
+        UserManager<User> userManager,
+        ILoggerService<UserService> logger)
     {
         this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        this.productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<UserDto> GetUserByIdAsync(Guid userId)
     {
-        try
-        {
-            logger.LogInformation($"Fetching user by ID: {userId}");
+        logger.LogInformation($"Fetching user by ID: {userId}");
 
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                logger.LogWarning($"User with ID {userId} not found.");
-                throw new KeyNotFoundException("User not found.");
-            }
-
-            return await user.ToDto(userManager);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            logger.LogWarning($"User with ID {userId} not found. Exception: {ex.Message}");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error fetching user by ID: {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while retrieving the user.", ex);
-        }
+        var user = await userRepository.GetByIdAsync(userId) ?? throw new KeyNotFoundException("User not found.");
+        return await user.ToDto(userManager);
     }
 
-    public async Task<List<UserDto>> GetAllUsersAsync()
+    public async Task<UserDto[]> GetAllUsersAsync()
     {
-        try
-        {
-            logger.LogInformation("Fetching all users.");
-
-            var users = await userRepository.GetAllAsync();
-            var userDtos = new List<UserDto>();
-
-            foreach (var user in users)
-            {
-                userDtos.Add(await user.ToDto(userManager));
-            }
-
-            return userDtos;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error fetching all users. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while retrieving the users.", ex);
-        }
+        logger.LogInformation("Fetching all users.");
+        var users = await userRepository.GetAllAsync();
+        return await Task.WhenAll(users.Select(user => user.ToDto(userManager)));
     }
 
     public async Task<bool> CreateUserAsync(CreateUserCommand command)
     {
-        try
+        logger.LogInformation($"Creating user: {command.Email}");
+
+        var user = new User
         {
-            logger.LogInformation($"Creating user: {command.Email}");
+            UserName = command.Email,
+            Email = command.Email,
+            Name = command.Name,
+        };
 
-            var user = new User
-            {
-                UserName = command.Email,
-                Email = command.Email,
-                Name = command.Name,
-            };
-
-            var result = await userManager.CreateAsync(user, command.Password);
-            if (!result.Succeeded)
-            {
-                logger.LogWarning($"Failed to create user {command.Email}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to create user {command.Email}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-
-            var roleResult = await userManager.AddToRoleAsync(user, "User");
-            if (!roleResult.Succeeded)
-            {
-                logger.LogWarning($"Failed to assign role to user {command.Email}: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to assign role to user {command.Email}. Errors: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-            }
-
-            logger.LogInformation($"User {command.Email} created successfully.");
-            return true;
-        }
-        catch (InvalidOperationException ex)
+        var result = await userManager.CreateAsync(user, command.Password);
+        if (!result.Succeeded)
         {
-            logger.LogError($"Error creating user {command.Email}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while creating the user.", ex);
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error creating user {command.Email}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while creating the user.", ex);
-        }
+
+        await userManager.AddToRoleAsync(user, "User");
+        logger.LogInformation($"User {command.Email} created successfully.");
+        return true;
     }
 
     public async Task<bool> UpdateUserAsync(UpdateUserCommand command)
     {
-        try
+        logger.LogInformation($"Updating user {command.Id}");
+
+        var user = await userRepository.GetByIdAsync(command.Id) ?? throw new KeyNotFoundException("User not found.");
+        user.Name = command.Name;
+        user.Email = command.Email;
+        user.UserName = command.Email;
+
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
         {
-            logger.LogInformation($"Updating user {command.Id}");
-
-            var user = await userRepository.GetByIdAsync(command.Id);
-            if (user == null)
-            {
-                logger.LogWarning($"User with ID {command.Id} not found.");
-                throw new KeyNotFoundException("User not found.");
-            }
-
-            user.Name = command.Email;
-            user.Email = command.Email;
-            user.UserName = command.Name;
-
-            var result = await userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-            {
-                logger.LogWarning($"Failed to update user {command.Id}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to update user {command.Id}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-
-            logger.LogInformation($"User {command.Id} updated successfully.");
-            return true;
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError($"Error updating user {command.Id}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while updating the user.", ex);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error updating user {command.Id}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while updating the user.", ex);
-        }
+
+        logger.LogInformation($"User {command.Id} updated successfully.");
+        return true;
     }
 
-    public async Task<bool> DeleteUserAsync(Guid userId)
+    public async Task<bool> DeactivateUserAsync(Guid userId)
     {
-        try
-        {
-            logger.LogInformation($"Deleting user {userId}");
+        logger.LogInformation($"Deactivating user {userId}.");
 
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user == null)
+        var user = await userRepository.GetByIdAsync(userId) 
+                   ?? throw new KeyNotFoundException("User not found.");
+
+        if (!user.IsActive)
+        {
+            logger.LogWarning($"User {userId} is already deactivated.");
+            return false;
+        }
+
+        user.IsActive = false;
+        await userRepository.UpdateAsync(user);
+
+        var userProducts = await productRepository.GetProductsByUserIdAsync(userId);
+
+        if (userProducts.Any())
+        {
+            foreach (var product in userProducts)
             {
-                logger.LogWarning($"User with ID {userId} not found.");
-                throw new KeyNotFoundException("User not found.");
+                product.IsDeleted = true;
+                await productRepository.UpdateAsync(product);
             }
 
-            var result = await userManager.DeleteAsync(user);
-            if (!result.Succeeded)
+            await productRepository.SaveChangesAsync();
+            logger.LogInformation($"User {userId} deactivated. All products hidden.");
+        }
+        else
+        {
+            logger.LogInformation($"User {userId} deactivated. No products to hide.");
+        }
+
+        return true;
+    }
+
+    public async Task<bool> ReactivateUserAsync(Guid userId)
+    {
+        logger.LogInformation($"Reactivating user {userId}.");
+
+        var user = await userRepository.GetByIdAsync(userId)
+                   ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.IsActive)
+        {
+            logger.LogWarning($"User {userId} is already active.");
+            return false;
+        }
+
+        user.IsActive = true;
+        await userRepository.UpdateAsync(user);
+
+        var userProducts = await productRepository.GetProductsByUserIdAsync(userId);
+
+        if (userProducts.Any())
+        {
+            foreach (var product in userProducts)
             {
-                logger.LogWarning($"Failed to delete user {userId}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to delete user {userId}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                product.IsDeleted = false;
+                await productRepository.UpdateAsync(product);
             }
 
-            logger.LogInformation($"User {userId} deleted successfully.");
-            return true;
+            await productRepository.SaveChangesAsync();
+            logger.LogInformation($"User {userId} reactivated. All products restored.");
         }
-        catch (InvalidOperationException ex)
+        else
         {
-            logger.LogError($"Error deleting user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while deleting the user.", ex);
+            logger.LogInformation($"User {userId} reactivated. No products to restore.");
         }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error deleting user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while deleting the user.", ex);
-        }
+
+        return true;
     }
 
     public async Task<bool> AssignRoleToUserAsync(Guid userId, string role)
     {
-        try
-        {
-            logger.LogInformation($"Assigning role '{role}' to user {userId}");
+        logger.LogInformation($"Assigning role '{role}' to user {userId}");
 
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                logger.LogWarning($"User with ID {userId} not found.");
-                throw new KeyNotFoundException("User not found.");
-            }
+        var user = await userRepository.GetByIdAsync(userId) ?? throw new KeyNotFoundException("User not found.");
+        var result = await userManager.AddToRoleAsync(user, role);
 
-            var result = await userManager.AddToRoleAsync(user, role);
-            if (!result.Succeeded)
-            {
-                logger.LogWarning($"Failed to assign role '{role}' to user {userId}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to assign role '{role}' to user {userId}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
 
-            logger.LogInformation($"Role '{role}' assigned to user {userId} successfully.");
-            return true;
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError($"Error assigning role to user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while assigning role to the user.", ex);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error assigning role '{role}' to user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while assigning role to the user.", ex);
-        }
+        logger.LogInformation($"Role '{role}' assigned to user {userId} successfully.");
+        return true;
     }
 
     public async Task<bool> ChangeUserPasswordAsync(Guid userId, string newPassword)
     {
-        try
-        {
-            logger.LogInformation($"Changing password for user {userId}");
+        logger.LogInformation($"Changing password for user {userId}");
 
-            var user = await userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                logger.LogWarning($"User with ID {userId} not found.");
-                throw new KeyNotFoundException("User not found.");
-            }
+        var user = await userRepository.GetByIdAsync(userId) ?? throw new KeyNotFoundException("User not found.");
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
 
-            var token = await userManager.GeneratePasswordResetTokenAsync(user);
-            var result = await userManager.ResetPasswordAsync(user, token, newPassword);
-            if (!result.Succeeded)
-            {
-                logger.LogWarning($"Failed to change password for user {userId}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                throw new InvalidOperationException($"Failed to change password for user {userId}. Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
 
-            logger.LogInformation($"Password changed successfully for user {userId}");
-            return true;
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError($"Error changing password for user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while changing the password.", ex);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error changing password for user {userId}. Exception: {ex.Message}");
-            throw new ApplicationException("An error occurred while changing the password.", ex);
-        }
+        logger.LogInformation($"Password changed successfully for user {userId}");
+        return true;
     }
 }

@@ -30,10 +30,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Products\Commands\" />
-      <Folder Include="Features\Products\Queries\" />
-      <Folder Include="Interfaces\" />
-      <Folder Include="Validators\" />
+      <ProjectReference Include="..\ProductManagement.Domain\ProductManagement.Domain.csproj" />
+      <ProjectReference Include="..\ProductManagement.Persistence\ProductManagement.Persistence.csproj" />
+      <ProjectReference Include="..\Shared.Exceptions\Shared.Exceptions.csproj" />
+      <ProjectReference Include="..\Shared.Logging\Shared.Logging.csproj" />
     </ItemGroup>
 
 </Project>

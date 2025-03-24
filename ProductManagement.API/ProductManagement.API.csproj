@@ -39,8 +39,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Extensions\" />
       <Folder Include="Models\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ProductManagement.Application\ProductManagement.Application.csproj" />
+      <ProjectReference Include="..\ProductManagement.Persistence\ProductManagement.Persistence.csproj" />
     </ItemGroup>
 
 </Project>
