@@ -8,7 +8,7 @@ public class LoggerService<T> : ILoggerService<T>
 
     public LoggerService(ILogger<T> logger)
     {
-        this.logger = logger ?? throw new ArgumentNullException(nameof(logger)); // Null check for logger
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public void LogInformation(string message)

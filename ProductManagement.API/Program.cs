@@ -11,20 +11,38 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        
-        builder.Services.AddAuthorization();
-        builder.Services.AddApplicationServices();
 
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        
-        builder.Services.AddDbContext<ProductDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("ProductDb")));
+        // Register services
+        ConfigureServices(builder.Services, builder.Configuration);
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
+        // Configure middleware pipeline
+        ConfigureMiddleware(app);
+
+        app.Run();
+    }
+
+    private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddAuthorization();
+        services.AddApplicationServices();
+        services.AddLoggingServices();
+
+        // Register controllers
+        services.AddControllers();
+
+        // Swagger for API documentation
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
+
+        // Database context
+        services.AddDbContext<ProductDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("ProductDb")));
+    }
+
+    private static void ConfigureMiddleware(WebApplication app)
+    {
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -33,11 +51,11 @@ public class Program
 
         app.UseMiddleware<GlobalExceptionHandler>();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
-        
-        app.UseHttpsRedirection();
 
+        app.UseHttpsRedirection();
         app.UseAuthorization();
 
-        app.Run();
+        // Ensure controllers are mapped
+        app.MapControllers();
     }
 }

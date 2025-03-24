@@ -8,21 +8,22 @@ using Shared.Exceptions;
 using UserManagement.Application.Features.Users.Commands;
 using UserManagement.Application.Features.Users.Handlers;
 using UserManagement.Domain.Entities;
-using UserManagement.Domain.Enums;
 using UserManagement.Infrastructure.EmailService;
 
 namespace UserManagement.Tests.Commands;
 
 public class CreateUserCommandHandlerTests
 {
-    private readonly Mock<UserManager<User>> userManagerMock;
-    private readonly Mock<IEmailService> emailServiceMock;
-    private readonly Mock<IValidator<CreateUserCommand>> validatorMock;
-    private readonly CreateUserCommandHandler handler;
+    private readonly Mock<UserManager<User>> _userManagerMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<IValidator<CreateUserCommand>> _validatorMock;
+    private readonly Mock<RoleManager<IdentityRole>> _roleManagerMock;
+    private readonly Mock<ILogger<CreateUserCommandHandler>> _loggerMock;
+    private readonly CreateUserCommandHandler _handler;
 
     public CreateUserCommandHandlerTests()
     {
-        userManagerMock = new Mock<UserManager<User>>(
+        _userManagerMock = new Mock<UserManager<User>>(
             Mock.Of<IUserStore<User>>(), 
             Mock.Of<IOptions<IdentityOptions>>(),
             Mock.Of<IPasswordHasher<User>>(),
@@ -34,15 +35,24 @@ public class CreateUserCommandHandlerTests
             Mock.Of<ILogger<UserManager<User>>>()
         );
 
-        emailServiceMock = new Mock<IEmailService>();
-        validatorMock = new Mock<IValidator<CreateUserCommand>>();
-        var loggerMock1 = new Mock<ILogger<CreateUserCommandHandler>>();
+        _roleManagerMock = new Mock<RoleManager<IdentityRole>>(
+            Mock.Of<IRoleStore<IdentityRole>>(),
+            Array.Empty<IRoleValidator<IdentityRole>>(),
+            Mock.Of<ILookupNormalizer>(),
+            Mock.Of<IdentityErrorDescriber>(),
+            Mock.Of<ILogger<RoleManager<IdentityRole>>>()
+        );
 
-        handler = new CreateUserCommandHandler(
-            userManagerMock.Object,
-            emailServiceMock.Object,
-            validatorMock.Object,
-            loggerMock1.Object
+        _emailServiceMock = new Mock<IEmailService>();
+        _validatorMock = new Mock<IValidator<CreateUserCommand>>();
+        _loggerMock = new Mock<ILogger<CreateUserCommandHandler>>();
+
+        _handler = new CreateUserCommandHandler(
+            _userManagerMock.Object,
+            _roleManagerMock.Object,
+            _emailServiceMock.Object,
+            _validatorMock.Object,
+            _loggerMock.Object
         );
     }
 
@@ -55,44 +65,68 @@ public class CreateUserCommandHandlerTests
             Name = "Test User",
             Email = "test@example.com",
             Password = "Password123!",
-            Role = UserRole.User,
+            Role = "User",
         };
 
-        validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
+        _validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
+        
+        _roleManagerMock.Setup(rm => rm.RoleExistsAsync(command.Role))
+            .ReturnsAsync(true)
+            .Verifiable();
 
-        userManagerMock.Setup(um => um.CreateAsync(It.IsAny<User>(), command.Password))
-            .ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(um => um.AddToRoleAsync(It.IsAny<User>(), command.Role.ToString()))
-            .ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(um => um.GenerateEmailConfirmationTokenAsync(It.IsAny<User>()))
-            .ReturnsAsync("mock-token");
-        emailServiceMock.Setup(es => es.SendAccountVerificationEmailAsync(command.Email, "mock-token"))
-            .Returns(Task.CompletedTask);
+        _userManagerMock.Setup(um => um.CreateAsync(It.Is<User>(u => u.Email == command.Email), command.Password))
+            .ReturnsAsync(IdentityResult.Success)
+            .Verifiable();
+
+        _userManagerMock.Setup(um => um.AddToRoleAsync(It.Is<User>(u => u.Email == command.Email), command.Role))
+            .ReturnsAsync(IdentityResult.Success)
+            .Verifiable();
+
+        _userManagerMock.Setup(um => um.GenerateEmailConfirmationTokenAsync(It.Is<User>(u => u.Email == command.Email)))
+            .ReturnsAsync("mock-token")
+            .Verifiable();
+
+        _emailServiceMock.Setup(es => es.SendAccountVerificationEmailAsync(command.Email, "mock-token"))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(command.Email, result.Email);
-        userManagerMock.Verify(um => um.CreateAsync(It.IsAny<User>(), command.Password), Times.Once);
-        userManagerMock.Verify(um => um.AddToRoleAsync(It.IsAny<User>(), command.Role.ToString()), Times.Once);
-        emailServiceMock.Verify(es => es.SendAccountVerificationEmailAsync(command.Email, "mock-token"), Times.Once);
+        
+        // Verify all setups were called
+        _roleManagerMock.Verify();
+        _userManagerMock.Verify();
+        _emailServiceMock.Verify();
     }
 
     [Fact]
     public async Task Handle_ShouldThrowValidationException_WhenRequestIsInvalid()
     {
         // Arrange
-        var command = new CreateUserCommand { Name = "", Email = "invalid", Password = "123", Role = UserRole.User };
+        var command = new CreateUserCommand 
+        { 
+            Name = "", 
+            Email = "invalid", 
+            Password = "123", 
+            Role = "InvalidRole",
+        };
 
-        var validationFailures = new List<ValidationFailure> { new("Email", "Invalid email format.") };
-        validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
+        var validationFailures = new List<ValidationFailure> 
+        { 
+            new("Email", "Invalid email format."),
+            new("Role", "Invalid role specified."),
+        };
+        
+        _validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult(validationFailures));
 
         // Act & Assert
-        await Assert.ThrowsAsync<ValidationException>(() => handler.Handle(command, CancellationToken.None));
+        await Assert.ThrowsAsync<ValidationException>(() => _handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]
@@ -104,16 +138,20 @@ public class CreateUserCommandHandlerTests
             Name = "Test User",
             Email = "test@example.com",
             Password = "Password123!",
-            Role = UserRole.User,
+            Role = "User",
         };
 
-        validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
+        _validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
-        userManagerMock.Setup(um => um.CreateAsync(It.IsAny<User>(), command.Password))
+            
+        _roleManagerMock.Setup(rm => rm.RoleExistsAsync(command.Role))
+            .ReturnsAsync(true);
+            
+        _userManagerMock.Setup(um => um.CreateAsync(It.IsAny<User>(), command.Password))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "User creation failed." }));
 
         // Act & Assert
-        await Assert.ThrowsAsync<IdentityException>(() => handler.Handle(command, CancellationToken.None));
+        await Assert.ThrowsAsync<IdentityException>(() => _handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]
@@ -125,17 +163,22 @@ public class CreateUserCommandHandlerTests
             Name = "Test User",
             Email = "test@example.com",
             Password = "Password123!",
-            Role = UserRole.User,
+            Role = "User",
         };
 
-        validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
+        _validatorMock.Setup(v => v.ValidateAsync(command, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
-        userManagerMock.Setup(um => um.CreateAsync(It.IsAny<User>(), command.Password))
+            
+        _roleManagerMock.Setup(rm => rm.RoleExistsAsync(command.Role))
+            .ReturnsAsync(true);
+            
+        _userManagerMock.Setup(um => um.CreateAsync(It.IsAny<User>(), command.Password))
             .ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(um => um.AddToRoleAsync(It.IsAny<User>(), command.Role.ToString()))
+            
+        _userManagerMock.Setup(um => um.AddToRoleAsync(It.IsAny<User>(), command.Role))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Role assignment failed." }));
 
         // Act & Assert
-        await Assert.ThrowsAsync<IdentityException>(() => handler.Handle(command, CancellationToken.None));
+        await Assert.ThrowsAsync<IdentityException>(() => _handler.Handle(command, CancellationToken.None));
     }
 }

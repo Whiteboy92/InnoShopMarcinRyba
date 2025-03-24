@@ -15,14 +15,16 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, User>
     private readonly IEmailService emailService;
     private readonly IValidator<CreateUserCommand> validator;
     private readonly ILogger<CreateUserCommandHandler> logger;
+    private readonly RoleManager<IdentityRole> roleManager;
 
-    public CreateUserCommandHandler(
-        UserManager<User> userManager,
+    public CreateUserCommandHandler(UserManager<User> userManager,
+        RoleManager<IdentityRole> roleManager,
         IEmailService emailService,
         IValidator<CreateUserCommand> validator,
         ILogger<CreateUserCommandHandler> logger)
     {
         this.userManager = userManager;
+        this.roleManager = roleManager;
         this.emailService = emailService;
         this.validator = validator;
         this.logger = logger;
@@ -38,9 +40,11 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, User>
             logger.LogWarning("Validation failed for Email: {Email}. Errors: {Errors}",
                 request.Email,
                 string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
-
             throw new ValidationException(validationResult.Errors);
         }
+
+        // Set default role if none specified
+        var role = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role;
 
         var user = new User
         {
@@ -48,6 +52,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, User>
             UserName = request.Email,
             Email = request.Email,
             Name = request.Name,
+            Role = role, // Use the determined role
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
@@ -56,23 +61,28 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, User>
             logger.LogError("User creation failed for Email: {Email}. Errors: {Errors}",
                 request.Email,
                 string.Join("; ", result.Errors.Select(e => e.Description)));
-
             throw new IdentityException("User creation failed.", result.Errors);
         }
 
-        var roleResult = await userManager.AddToRoleAsync(user, request.Role.ToString());
+        // Verify role exists before assignment
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            logger.LogError("Role does not exist: {Role}", role);
+            throw new IdentityException($"Role {role} does not exist.", result.Errors);
+        }
+
+        var roleResult = await userManager.AddToRoleAsync(user, role);
         if (!roleResult.Succeeded)
         {
             logger.LogError("Role assignment failed for Email: {Email}, Role: {Role}. Errors: {Errors}",
                 request.Email,
-                request.Role,
+                role,
                 string.Join("; ", roleResult.Errors.Select(e => e.Description)));
-
             throw new IdentityException("Role assignment failed.", roleResult.Errors);
         }
 
-        logger.LogInformation("User created successfully with Email: {Email}, Role: {Role}", request.Email,
-            request.Role);
+        logger.LogInformation("User created successfully with Email: {Email}, Role: {Role}", 
+            request.Email, role);
 
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
         await emailService.SendAccountVerificationEmailAsync(user.Email, token);

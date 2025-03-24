@@ -10,14 +10,28 @@ namespace Shared.Exceptions;
 
 public class GlobalExceptionHandler
 {
+    private readonly RequestDelegate next;
     private readonly ILogger<GlobalExceptionHandler> logger;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger)
     {
+        this.next = next;
         this.logger = logger;
     }
 
-    public async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    public async Task Invoke(HttpContext context)
+    {
+        try
+        {
+            await next(context);
+        }
+        catch (Exception exception)
+        {
+            await HandleExceptionAsync(context, exception);
+        }
+    }
+
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
 

@@ -39,7 +39,7 @@ public class CreateProductHandlerTests
             Description = command.Description,
             Price = command.Price,
             IsAvailable = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         mockProductService.Setup(x => x.CreateAsync(It.IsAny<CreateProductDto>()))
@@ -50,7 +50,7 @@ public class CreateProductHandlerTests
                 Description = createdProduct.Description,
                 Price = createdProduct.Price,
                 IsAvailable = createdProduct.IsAvailable,
-                CreatedAt = createdProduct.CreatedAt
+                CreatedAt = createdProduct.CreatedAt,
             });
 
         // Act

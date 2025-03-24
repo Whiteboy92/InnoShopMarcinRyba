@@ -48,7 +48,13 @@ public class RegisterCommandHandlerTests
     public async Task Handle_ShouldRegisterUser_WhenInputIsValid()
     {
         // Arrange
-        var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", Name = "Test User" };
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "test@example.com",
+            Name = "Test User",
+            Role = "User",
+        };
         var validationResult = new ValidationResult();
 
         validatorMock.Setup(v => v.ValidateAsync(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))

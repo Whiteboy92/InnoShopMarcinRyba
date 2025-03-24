@@ -45,10 +45,11 @@ public class LoginUserCommandHandlerTests
         // Arrange
         var user = new User
         {
-            Id = Guid.NewGuid(),
-            Email = "test@example.com",
             Name = "Test User",
+            Role = "User",
         };
+        user.Id = Guid.NewGuid();
+        user.Email = "test@example.com";
         var roles = new List<string> { "User" };
         var token = "valid-jwt-token";
 
@@ -94,6 +95,7 @@ public class LoginUserCommandHandlerTests
             Id = Guid.NewGuid(),
             Email = "test@example.com",
             Name = "Test User",
+            Role = "User",
         };
 
         userManagerMock.Setup(um => um.FindByEmailAsync("test@example.com"))

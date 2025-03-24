@@ -2,7 +2,6 @@
 using UserManagement.Application.Interfaces;
 using UserManagement.Domain.Entities;
 using Shared.Logging;
-using UserManagement.Application.DTOs;
 
 namespace UserManagement.Persistence.Repositories;
 

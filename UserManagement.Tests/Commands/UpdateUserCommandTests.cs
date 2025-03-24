@@ -58,6 +58,7 @@ public class UpdateUserCommandHandlerTests
             Name = "Old Name",
             Email = "old@example.com",
             UserName = "old@example.com",
+            Role = "User",
         };
 
         var command = new UpdateUserCommand

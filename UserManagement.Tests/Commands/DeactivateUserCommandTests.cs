@@ -59,6 +59,8 @@ namespace UserManagement.Tests.Commands
                 Id = command.UserId,
                 IsActive = true,
                 Name = "Test User",
+                Email = "test@example.com",
+                Role = "User",
             };
             var products = new List<Product>
             {

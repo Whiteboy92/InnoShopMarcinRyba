@@ -52,6 +52,7 @@ public class UserService : IUserService
             UserName = command.Email,
             Email = command.Email,
             Name = command.Name,
+            Role = command.Role,
         };
 
         var result = await userManager.CreateAsync(user, command.Password);

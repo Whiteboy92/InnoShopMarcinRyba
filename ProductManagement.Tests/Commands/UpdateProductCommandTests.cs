@@ -30,7 +30,7 @@ public class UpdateProductHandlerTests
             Name = "Updated Product",
             Description = "Updated Description",
             Price = 150,
-            IsAvailable = false
+            IsAvailable = false,
         };
 
         var existingProduct = new ProductDto
@@ -40,7 +40,7 @@ public class UpdateProductHandlerTests
             Description = "Old Description",
             Price = 100,
             IsAvailable = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var updatedProduct = new ProductDto
@@ -50,7 +50,7 @@ public class UpdateProductHandlerTests
             Description = command.Description,
             Price = command.Price,
             IsAvailable = command.IsAvailable,
-            CreatedAt = existingProduct.CreatedAt
+            CreatedAt = existingProduct.CreatedAt,
         };
 
         mockProductService.Setup(x => x.GetByIdAsync(command.Id))
@@ -78,7 +78,7 @@ public class UpdateProductHandlerTests
             Name = "Updated Product",
             Description = "Updated Description",
             Price = 150,
-            IsAvailable = false
+            IsAvailable = false,
         };
 
         // Simulating an exception when trying to get the product by ID

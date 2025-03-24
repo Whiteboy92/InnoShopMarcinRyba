@@ -40,6 +40,7 @@ public class ReactivateUserCommandTests
             Id = userId,
             IsActive = false,
             Name = "Test User",
+            Role = "User",
         };
         var products = new List<Product>
         {
@@ -58,7 +59,7 @@ public class ReactivateUserCommandTests
                 Name = "Test Product2",
                 Description = null,
                 Price = 50,
-            }
+            },
         };
 
         userRepositoryMock.Setup(repo => repo.GetByIdAsync(It.IsAny<Guid>()))
@@ -89,6 +90,7 @@ public class ReactivateUserCommandTests
             Id = userId,
             IsActive = true,
             Name = "Test User",
+            Role = "User",
         };
 
         userRepositoryMock.Setup(repo => repo.GetByIdAsync(It.IsAny<Guid>()))
